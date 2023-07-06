@@ -1,8 +1,8 @@
 from pandas import read_csv
 from tensorflow.keras.models import Sequential
-#from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
-import scikeras
-from scikeras.wrappers import KerasRegressor
+from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
+#import scikeras
+#from scikeras.wrappers import KerasRegressor
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import KFold
 import h5py
@@ -14,7 +14,7 @@ from tensorflow.keras import metrics
 import numpy as np
 from sklearn.metrics import r2_score
 import tensorflow.keras
-#import elfi
+import elfi
 import pygtc
 import pickle
 from tensorflow.keras.layers import Dropout, Dense, Input
