@@ -75,3 +75,71 @@ print('Test Accuracy: %.3f' % acc)
 row = [5.1,3.5,1.4,0.2]
 yhat = model.predict([row])
 print('Predicted: %s (class=%d)' % (yhat, np.argmax(yhat)))
+
+import tensorflow as tf
+# composing model
+class MyModel(tf.keras.Model):
+    def __init__(self, kernel_size, filters):
+        super(MyModel,self).__init__(name='')
+        filters1,filters2,filters3 = filters
+        
+        self.conv2a = tf.keras.layers.Conv2D(filters1,(1,1))
+        self.bn2a = tf.keras.layers.BatchNormalization()
+        self.conv2b = tf.keras.layers.Conv2D(filters2,kernel_size,padding = 'same')
+        self.bn2b = tf.keras.layers.BatchNormalization()
+        self.conv2c = tf.keras.layers.Conv2D(filters3,(1,1))
+        self.bn2c = tf.keras.layers.BatchNormalization()
+    
+    def call(self,input_tensor,training = False):
+        x = self.conv2a(input_tensor)
+        x = self.bn2a(x, training=training)
+        x = tf.nn.relu(x)
+        
+        x = self.conv2b(x)
+        x = self.bn2b(x, training=training)
+        x = tf.nn.relu(x)
+        
+        x = self.conv2c(x)
+        x = self.bn2c(x, training=training)
+        x += input_tensor
+        return tf.nn.relu(x)
+
+block = MyModel(1, [1, 2, 3])
+_ = block(tf.zeros([1, 2, 3, 3]))
+block.summary()
+
+class Link:
+    def __init__(self,value,next = None):
+        self.value = value
+    
+    def insert(self,link):
+        link.next = self.next
+        self.next = link
+    
+    def __iter__(self):
+        return LinkIterator(self)
+
+class LinkIterator:
+    def __init__(self,link):
+        self.here = self.link
+    
+    def __iter__(self):
+        return self
+    
+    def __next__(self):
+        if self.here:
+            next = self.here
+            self.here = self.here.next
+            return next.value
+        else:
+            raise StopIteration
+
+linked_list = Link(1, Link(2, Link(3)))
+linked_list.value
+        
+# Create a rank 2 tensor (2 dimensions)
+rank_2_tensor = tf.constant([[10, 7],
+                             [3, 4]])
+
+# Get the last item of each row
+rank_2_tensor[:, -1]
