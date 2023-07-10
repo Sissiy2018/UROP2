@@ -41,7 +41,7 @@ print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
 n_features = X_train.shape[1]
 # define model
 model = Sequential()
-model.add(Dense(10, activation='relu', kernel_initializer='he_normal', input_shape=(n_features,)))
+model.add(Dense(10, activation='relu', kernel_initializer='he_normal', input_shape=(n_features,))) # special for only one dimension
 model.add(Dropout(0.5))
 model.add(BatchNormalization())
 model.add(Dense(8, activation='relu', kernel_initializer='he_normal'))
@@ -143,3 +143,15 @@ rank_2_tensor = tf.constant([[10, 7],
 
 # Get the last item of each row
 rank_2_tensor[:, -1]
+
+import functools
+
+def my_decorator(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        func(*args, **kwargs)
+    return wrapper
+
+@my_decorator
+def say_whee():
+    print("Whee!")
