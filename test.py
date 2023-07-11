@@ -39,3 +39,21 @@ import shutil
 import random
 from glob import glob
 import time
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Generate random data for demonstration
+np.random.seed(1)
+y_pred = np.random.randn(100)
+y_val = y_pred + np.random.randn(100) * 0.1
+
+# Calculate normalized absolute difference
+y = np.abs(y_pred - y_val) / np.max(np.abs(y_pred - y_val))
+
+# Plot the graph
+plt.plot(y_val / np.max(y_val), y, 'o')
+plt.xlabel('Normalized y_val')
+plt.ylabel('Normalized Absolute Difference')
+plt.title('Comparison between y_pred and y_val')
+plt.show()
