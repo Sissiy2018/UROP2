@@ -129,8 +129,24 @@ for i in range(2):
 print(r2_score(y_test, y_pred))
 plt.show()
 
+# Plot the points
+plt.scatter(y_pred[:, 0], y_pred[:, 1],marker='x')
+plt.scatter(y_test[:, 0], y_test[:, 1], c='r', marker='s', label='-0.3')
+plt.xlabel('X')
+plt.ylabel('Y')
+plt.title('Plot of N Points')
+plt.show()
 
+from scipy.spatial import distance
+dst = []
+for i in range(y_pred.shape[0]):
+    dist = distance.euclidean(y_pred[i], y_test[i])
+    dst.append(dist)
 
+plt.boxplot(dst)
+plt.show()
+
+# restricted within region 800*800? when it is actually 1000*1000?
 
 
 
