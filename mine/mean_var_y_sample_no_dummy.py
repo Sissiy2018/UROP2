@@ -27,32 +27,35 @@ def create_samples():
     # Define the means and standard deviations for the two Gaussian distributions
     mean1_range = np.arange(10, 1001, 10)
     mean2_range = np.arange(10, 1001, 10)
-    std_dev = 50
-    run = mean1_range.shape[0]*mean2_range.shape[0]
+    std_dev_range = np.arange(10, 101, 10)
+    run = mean1_range.shape[0]*mean2_range.shape[0]*std_dev_range.shape[0]
     sample_size = 500
+    count = 0
+
     # Initialize empty arrays to store the samples and parameters
     samples = np.empty((run, 4), dtype=np.float64)
-    para = np.empty((run, 2), dtype=np.float64)
+    para = np.empty((run, 3), dtype=np.float64)
 
-    count = 0
     # Generate samples from each distribution
     for mean1 in mean1_range:
         for mean2 in mean2_range:
-            # Generate 250 samples from the first Gaussian distribution
-            dist1_samples = np.random.normal(mean1, std_dev, size=int(sample_size/2))
-            # Generate 250 samples from the second Gaussian distribution
-            dist2_samples = np.random.normal(mean2, std_dev, size=int(sample_size/2))
-            # Concatenate the samples from both distributions
-            dist_samples = np.concatenate([dist1_samples, dist2_samples])
-            # Calculate the moments
-            mean = np.mean(dist_samples)
-            variance = np.var(dist_samples)
-            skewness = np.mean((dist_samples - mean) ** 3) / np.power(np.var(dist_samples), 3/2)
-            kurtosis = np.mean((dist_samples - mean) ** 4) / np.power(np.var(dist_samples), 2) - 3
-            # Append the samples to the main array
-            samples[count] = np.array([mean,variance,skewness,kurtosis])
-            para[count] = np.array([mean1,mean2])
-            count += 1
+            for std_dev in std_dev_range:
+                # Generate 250 samples from the first Gaussian distribution
+                dist1_samples = np.random.normal(mean1, std_dev, size=int(sample_size/2))
+                # Generate 250 samples from the second Gaussian distribution
+                dist2_samples = np.random.normal(mean2, std_dev, size=int(sample_size/2))
+                # Concatenate the samples from both distributions
+                dist_samples = np.concatenate([dist1_samples, dist2_samples])
+                # Calculate the moments
+                mean = np.mean(dist_samples)
+                variance = np.var(dist_samples)
+                skewness = np.mean((dist_samples - mean) ** 3) / np.power(np.var(dist_samples), 3/2)
+                kurtosis = np.mean((dist_samples - mean) ** 4) / np.power(np.var(dist_samples), 2) - 3
+                # Append the samples to the main array
+                samples[count] = np.array([mean,variance,skewness,kurtosis])
+                para[count] = np.array([mean1, mean2,std_dev])
+                count += 1
+    
     return samples, para
 
 samples, para = create_samples()
@@ -103,7 +106,7 @@ def infer(training,neurons = 100,layers = 3,dropout_rate = 0.2,epochs = 5000):
     y_val = np.column_stack((y_val,nr,nr,nr,nr))
     output_shape = (y_train.shape[1],)
 
-    inputs = Input(shape=(2,))
+    inputs = Input(shape=(3,))
     hl = Dense(100, kernel_initializer='uniform', activation='relu')(inputs)
     for i in range(layers):
         hl = Dense(neurons, kernel_initializer='uniform', activation='relu')(hl)
@@ -137,7 +140,9 @@ def infer(training,neurons = 100,layers = 3,dropout_rate = 0.2,epochs = 5000):
     #plt.show()
 
     y_pred =  scy.inverse_transform(model.predict(X_val)[:,:4])
+    #y_pred = model.predict(X_val)[:,:4]
     y_val =  scy.inverse_transform(y_val[:,:4])
+    #y_val = y_val[:,:4]
     #h = [0,1,2,3]
 #plt.plot(y_val[2], label='y_val[1]')
 #plt.plot(y_pred[2], label='y_pred[1]')
@@ -154,7 +159,7 @@ def infer(training,neurons = 100,layers = 3,dropout_rate = 0.2,epochs = 5000):
 
     print(r2_score(y_val, y_pred[:,:4]))
 
-    ext = "new"
+    ext = "dummy"
     model.save("emu_model_"+ext+".h5")
     save_object(sc, "emu_sc_"+ext+".pkl")
     save_object(scy, "emu_scy_"+ext+".pkl")
@@ -208,7 +213,7 @@ def infer_no_dummy(training,neurons = 100,layers = 3,dropout_rate = 0.2,epochs =
     #y_val = np.column_stack((y_val,nr,nr,nr,nr))
     output_shape = (y_train.shape[1],)
 
-    inputs = Input(shape=(2,))
+    inputs = Input(shape=(3,))
     hl = Dense(100, kernel_initializer='uniform', activation='relu')(inputs)
     for i in range(layers):
         hl = Dense(neurons, kernel_initializer='uniform', activation='relu')(hl)
@@ -225,7 +230,8 @@ def infer_no_dummy(training,neurons = 100,layers = 3,dropout_rate = 0.2,epochs =
 #model.add(Dense(output_shape[0],kernel_initializer='uniform'))
 
     opt = tf.keras.optimizers.Adam(learning_rate=0.001,beta_1=0.9,beta_2=0.999,epsilon=1e-09,)
-    model.compile(loss=aleatoric_loss, optimizer=opt, metrics=['accuracy'])
+    #model.compile(loss=aleatoric_loss, optimizer=opt, metrics=['accuracy'])
+    model.compile(loss='mean_absolute_error', optimizer=opt, metrics=['accuracy'])
     es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=50)
     print(model.summary())
     history = model.fit(X_train, y_train, batch_size=int(len(X_train)/3), epochs = epochs, shuffle=True, 
@@ -310,22 +316,38 @@ def testing():
     print(r2_score(y_test, y_pred_test[:,:4]))
     plt.show()
 
-ext = "new"
+ext = "dummy"
 testing()
 
 
 #=======================================================================
 # plot code
-no_run = 100
 
-generate_prediction_distribution(10,10)
+
+a = np.array([[500,50,10]]*10)
+#a[:, np.newaxis]
+b = sc.transform(a)
+model.predict(b)[:,:4]
+c = scy.inverse_transform(model.predict(b)[:,:4])
+
+model.predict(a)
+model
+
+x = [58,144000]
+mu = np.mean(x)
+sigma = np.std(x)
+print([((58 - mu) / sigma),((144000 - mu) / sigma)])
+
+generate_prediction_distribution(500,500,50)
+
+no_run = 100
 # Function to generate prediction distribution
-def generate_prediction_distribution(theta_1, theta_2):
+def generate_prediction_distribution(theta_1, theta_2,std_dev):
     theta_pred = np.empty((no_run, 4), dtype=np.float64)
     #for i in range(no_run):
-    para_sim = np.array([[theta_1,theta_2]]*no_run)
+    para_sim = np.array([[theta_1,theta_2,std_dev]]*no_run)
         #para_sim = (np.expand_dims(para_sim,0))
-    input_para = sc.fit_transform(para_sim)
+    input_para = sc.transform(para_sim)
     output_para = scy.inverse_transform(model.predict(input_para)[:,:4])
     theta_pred = output_para
         # Append the samples to the main array
@@ -333,7 +355,7 @@ def generate_prediction_distribution(theta_1, theta_2):
         # Return a probability distribution (e.g., numpy array) for the given parameters
     return theta_pred
 
-def generate_simulation_distribution(theta_1, theta_2):
+def generate_simulation_distribution(theta_1, theta_2,std_dev):
     theta_sim = np.empty((no_run, 4), dtype=np.float64)
     for i in range(no_run):
         dist1_samples = np.random.normal(theta_1, std_dev, size=250)
@@ -349,23 +371,29 @@ def generate_simulation_distribution(theta_1, theta_2):
         theta_sim[i] = np.array([mean,variance,skewness,kurtosis])
     # Return a probability distribution (e.g., numpy array) for the given parameters
     return theta_sim
+
+def parameter_set():
+    # Define the sets of parameters [a, b]
+    # Define the means and standard deviations for the two Gaussian distributions
+    theta_1 = np.arange(500, 1001, 50)
+    theta_2 = np.arange(500, 1001, 50)
+    std_dev = np.arange(10, 51, 10)
+    run = theta_1.shape[0]*theta_2.shape[0]*std_dev.shape[0]
+    #sample_size = 500
     
-# Define the sets of parameters [a, b]
-# Define the means and standard deviations for the two Gaussian distributions
-theta_1 = np.arange(50, 501, 10)
-theta_2 = np.arange(50, 501, 10)
-std_dev = 50
-run = theta_1.shape[0]*theta_2.shape[0]
-sample_size = 500
+    para_sim = np.empty((run, 3))
+    
+    count = 0
+    # Generate samples from each distribution
+    for mean1 in theta_1:
+        for mean2 in theta_2:
+            for std in std_dev:
+                para_sim[count] = np.array([mean1,mean2,std])
+                count += 1
+    
+    return para_sim
 
-para_sim = np.empty((run, 2), dtype=np.float64)
-
-count = 0
-# Generate samples from each distribution
-for mean1 in theta_1:
-    for mean2 in theta_2:
-        para_sim[count] = np.array([mean1,mean2])
-        count += 1
+para_sim = parameter_set()
 
 # Initialize lists to store the results
 mean_diff_std_arr = np.array([])
@@ -373,13 +401,23 @@ median_diff_M_sim_arr =np.array([])
 std_ratio_arr = np.array([])
 wasserstein_distances_arr = np.array([])
 
+ext = "dummy"
+model = tensorflow.keras.models.load_model("emu_model_"+ext+".h5", compile=False)
+import tensorflow.keras
+
+with open("emu_sc_"+ext+".pkl", 'rb') as run:
+    sc = pickle.load(run)
+
+with open("emu_scy_"+ext+".pkl", 'rb') as run:
+    scy = pickle.load(run)
+
 # Iterate over each parameter set
 for params in para_sim:
-    a, b = params
+    a, b,c = params
 
     # Generate the prediction and simulation distributions
-    pred = generate_prediction_distribution(a, b)[:,0]
-    sim = generate_simulation_distribution(a, b)[:,0]
+    pred = generate_prediction_distribution(a, b,c)[:,4]
+    sim = generate_simulation_distribution(a, b,c)[:,4]
 
     # Calculate the scores using different methods
     mean_diff_std = np.mean(pred - sim) / np.std(pred)
